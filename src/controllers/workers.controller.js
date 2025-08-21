@@ -18,4 +18,8 @@ req.params.id,
 if (!worker) return res.status(404).json({ message: "Not found" });
 res.json(worker);
 }
-module.exports = { createWorker, updateWorker};
+async function listWorkers(_req, res) {
+const workers = await Worker.find();
+res.json(workers);
+}
+module.exports = { createWorker, updateWorker, listWorkers};
