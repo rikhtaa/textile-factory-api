@@ -37,4 +37,19 @@ user: { id: worker._id, name: worker.name, role: worker.role, email: worker.emai
 },
 });
 }
-module.exports = { register }
+async function login(req, res) {
+const { email, password } = req.body;
+const worker = await Worker.findOne({ email });
+if (!worker?.passwordHash) {
+return res.status(401).json({ message: "Invalid credentials" });
+}
+const valid = await bcrypt.compare(password, worker.passwordHash);
+if (!valid) return res.status(401).json({ message: "Invalid credentials" });
+const token = signJwt(worker);
+res.json({
+token,
+user: { id: worker._id, name: worker.name, role: worker.role, email: worker.email
+},
+});
+}
+module.exports = { register, login }

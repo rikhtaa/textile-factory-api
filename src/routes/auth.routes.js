@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
-const { register } = require("../controllers/auth.controller");
+const { register, login } = require("../controllers/auth.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
 // Public register only if no admin exists is enforced in controller.
@@ -18,6 +18,17 @@ const { validationResult } = require("express-validator");
 const errors = validationResult(req);
 if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 return register(req, res, next);
+}
+);
+router.post(
+"/login",
+body("email").isEmail(),
+body("password").isString().isLength({ min: 6 }),
+(req, res, next) => {
+const { validationResult } = require("express-validator");
+const errors = validationResult(req);
+if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+return login(req, res, next);
 }
 );
 
