@@ -27,4 +27,8 @@ const worker = await Worker.findById(req.params.id);
 if (!worker) return res.status(404).json({ message: "Not found" });
 res.json(worker);
 }
-module.exports = { createWorker, updateWorker, listWorkers, getWorker};
+async function deleteWorker(req, res) {
+await Worker.findByIdAndDelete(req.params.id);
+res.status(204).send();
+}
+module.exports = { createWorker, updateWorker, listWorkers, getWorker, deleteWorker};

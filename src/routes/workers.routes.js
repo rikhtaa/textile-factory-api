@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
-const { createWorker, updateWorker, listWorkers, getWorker} =
+const { createWorker, updateWorker, listWorkers, getWorker, deleteWorker} =
 require("../controllers/workers.controller");
 const { requireAuth, requireRoles } = require("../middleware/auth");
 const router = Router();
@@ -24,6 +24,7 @@ createWorker);
 router.put("/:id", requireAuth, requireRoles("admin", "manager"), validateWorker,
 updateWorker);
 router.get("/", requireAuth, requireRoles("admin", "manager"), listWorkers);
-router.get("/:id", getWorker);
+router.get("/:id", requireAuth, getWorker);
+router.delete("/:id", requireAuth, requireRoles("admin", "manager"), deleteWorker);
 
 module.exports = router;
