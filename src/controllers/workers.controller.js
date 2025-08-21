@@ -7,4 +7,15 @@ const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
 const worker = await Worker.create({ ...rest, passwordHash });
 res.status(201).json(worker);
 }
-module.exports = { createWorker};
+async function updateWorker(req, res) {
+const { password, ...rest } = req.body;
+const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+const worker = await Worker.findByIdAndUpdate(
+req.params.id,
+{ ...rest, ...(passwordHash ? { passwordHash } : {}) },
+{ new: true }
+);
+if (!worker) return res.status(404).json({ message: "Not found" });
+res.json(worker);
+}
+module.exports = { createWorker, updateWorker};
