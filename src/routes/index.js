@@ -5,7 +5,9 @@ const looms = require("./looms.routes");
 const production = require("./production.routes");
 const reports = require("./reports.routes")
 const qualities = require("./qualities.routes");
+const beams = require("./beams.routes")
 const router = Router();
+
 router.use("/workers", workers);
 router.use("/auth", auth);
 router.use("/looms", looms);
