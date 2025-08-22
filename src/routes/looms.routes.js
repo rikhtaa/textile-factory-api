@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
-const {createLoom, listLooms} =
+const {createLoom, listLooms, getLoom} =
 require("../controllers/looms.controller");
 const { requireAuth, requireRoles } = require("../middleware/auth");
 const router = Router();
@@ -21,5 +21,5 @@ next();
 router.post("/", requireAuth, requireRoles("admin", "manager"), validateLoom,
 createLoom);
 router.get("/", requireAuth, listLooms);
-
+router.get("/:id", requireAuth, getLoom);
 module.exports = router;

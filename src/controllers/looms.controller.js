@@ -8,4 +8,9 @@ async function listLooms(_req, res) {
 const data = await Loom.find();
 res.json(data);
 }
-module.exports = { createLoom, listLooms };
+async function getLoom(req, res) {
+const loom = await Loom.findById(req.params.id);
+if (!loom) return res.status(404).json({ message: "Not found" });
+res.json(loom);
+}
+module.exports = { createLoom, listLooms, getLoom };
