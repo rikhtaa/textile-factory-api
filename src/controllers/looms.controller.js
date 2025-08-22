@@ -18,4 +18,8 @@ const loom = await Loom.findByIdAndUpdate(req.params.id, req.body, { new: true }
 if (!loom) return res.status(404).json({ message: "Not found" });
 res.json(loom);
 }
-module.exports = { createLoom, listLooms, getLoom, updateLoom};
+async function deleteLoom(req, res) {
+await Loom.findByIdAndDelete(req.params.id);
+res.status(204).send();
+}
+module.exports = { createLoom, listLooms, getLoom, updateLoom, deleteLoom};
