@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body, query } = require("express-validator");
-const { createProduction, bulkImport } =
+const { createProduction, bulkImport, listProduction } =
 require("../controllers/production.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
@@ -46,5 +46,19 @@ if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 next();
 },
 bulkImport
+);
+router.get(
+"/",
+requireAuth,
+query("date").optional().isISO8601(),
+query("loomId").optional().isString(),
+query("operatorId").optional().isString(),
+(req, res, next) => {
+const { validationResult } = require("express-validator");
+const errors = validationResult(req);
+if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+next();
+},
+listProduction
 );
 module.exports = router;

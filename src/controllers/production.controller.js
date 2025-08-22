@@ -71,4 +71,13 @@ results.push(existing);
 return res.status(201).json(results);
 }
 }
-module.exports = { createProduction, bulkImport };
+async function listProduction(req, res) {
+const { date, loomId, operatorId } = req.query;
+const where = {};
+if (date) where.date = toUtcDateOnly(date);
+if (loomId) where.loomId = loomId;
+if (operatorId) where.operatorId = operatorId;
+const records = await ProductionRecord.find(where).sort({ date: 1 }).lean();
+res.json(records);
+}
+module.exports = { createProduction, bulkImport, listProduction };
