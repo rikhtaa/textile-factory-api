@@ -31,4 +31,44 @@ return res.status(409).json({ message: "Duplicate record" });
 throw e;
 }
 }
-module.exports = { createProduction };
+async function bulkImport(req, res) {
+const { upsert = true, records } = req.body;
+if (!Array.isArray(records) || records.length === 0) {
+return res.status(400).json({ message: "records required" });
+}
+if (!upsert) {
+const docs = records.map((r) => ({
+...r,
+date: toUtcDateOnly(r.date),
+}));
+try {
+const created = await ProductionRecord.insertMany(docs, { ordered: false });
+return res.status(201).json(created);
+} catch (e) {
+return res.status(400).json({ message: "Bulk insert error", error: e.message });
+}
+} else {
+const results = [];
+for (const r of records) {
+const key = {
+operatorId: r.operatorId,
+loomId: r.loomId,
+qualityId: r.qualityId,
+date: toUtcDateOnly(r.date),
+};const existing = await ProductionRecord.findOne(key);
+if (!existing) {
+const created = await ProductionRecord.create({ ...key, shift: r.shift,
+meterProduced: r.meterProduced, notes: r.notes });
+results.push(created);
+} else {
+existing.meterProduced = Number(existing.meterProduced) +
+Number(r.meterProduced);
+if (r.notes) existing.notes = r.notes;
+await existing.save();
+results.push(existing);
+}
+}
+return res.status(201).json(results);
+}
+}
+module.exports = { createProduction, bulkImport };
