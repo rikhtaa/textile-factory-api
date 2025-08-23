@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
-const { createQuality, listQualities } =
+const { createQuality, listQualities, updateQuality } =
 require("../controllers/qualities.controller");
 const { requireAuth, requireRoles } = require("../middleware/auth");
 const router = Router();
@@ -19,6 +19,9 @@ router.post("/", requireAuth, requireRoles("admin", "manager"),
 body("name").isString().notEmpty(), body("pricePerMeter").isFloat({ min: 0 }),
 validateQuality, createQuality);
 router.get("/", requireAuth, listQualities);
+router.put("/:id", requireAuth, requireRoles("admin", "manager"), validateQuality,
+updateQuality);
+
 
 
 module.exports = router;
