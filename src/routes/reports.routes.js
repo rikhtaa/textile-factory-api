@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { query } = require("express-validator");
-const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun } = require("../controllers/reports.controller");
+const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun, get15DayOperator } = require("../controllers/reports.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
 function validate(req, res, next) {
@@ -31,6 +31,14 @@ query("to").isISO8601(),
 query("commit").optional().isIn(["true", "false"]),
 validate,
 getPayRun
+);
+router.get(
+"/15day-operator",
+requireAuth,
+query("startDate").isISO8601(),
+query("operatorId").isString(),
+validate,
+get15DayOperator
 );
 
 module.exports = router;

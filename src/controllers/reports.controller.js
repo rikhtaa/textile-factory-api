@@ -47,10 +47,16 @@ return res.json({ runId: run._id, results });
 }
 res.json({ results });
 }
+async function get15DayOperator(req, res) {
+const { startDate, operatorId } = req.query;
+const report = await fifteenDayOperator(operatorId, startDate);
+res.json(report);
+}
 module.exports = {
 getDailyLooms,
 getDailyQuality,
 getOperatorPeriod,
-getPayRun
+getPayRun,
+get15DayOperator
 };
 
