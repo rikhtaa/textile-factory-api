@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { query } = require("express-validator");
-const { getDailyLooms, getDailyQuality } = require("../controllers/reports.controller");
+const { getDailyLooms, getDailyQuality, getOperatorPeriod } = require("../controllers/reports.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
 function validate(req, res, next) {
@@ -14,5 +14,14 @@ router.get("/daily-looms", requireAuth, query("date").isISO8601(), validate,
 getDailyLooms);
 router.get("/daily-quality", requireAuth, query("date").isISO8601(), validate,
 getDailyQuality);
+router.get(
+"/operator-period",
+requireAuth,
+query("operatorId").isString(),
+query("from").isISO8601(),
+query("to").isISO8601(),
+validate,
+getOperatorPeriod
+);
 
 module.exports = router;

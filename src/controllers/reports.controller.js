@@ -13,8 +13,14 @@ const { date } = req.query;
 const report = await dailyQualityReport(date);
 res.json(report);
 }
+async function getOperatorPeriod(req, res) {
+const { operatorId, from, to } = req.query;
+const report = await operatorPeriodReport(operatorId, from, to);
+res.json(report);
+}
 module.exports = {
 getDailyLooms,
-getDailyQuality
+getDailyQuality,
+getOperatorPeriod
 };
 
