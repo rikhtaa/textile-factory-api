@@ -3,6 +3,7 @@ const workers = require("./workers.routes");
 const auth = require("./auth.routes");
 const looms = require("./looms.routes");
 const production = require("./production.routes");
+const reports = require("./reports.routes")
 
 const router = Router();
 router.use("/workers", workers);
