@@ -1,12 +1,14 @@
 const request = require("supertest");
 const app = require("../src/app");
+const { setup } = require("./setup");
 let token;
 beforeAll(async () => {
+await setup(); 
 const res = await request(app)
 .post("/api/auth/login")
 .send({ email: "admin@test.com", password: "admin123" });
 token = res.body.token;
-});
+}, );
 test("list looms requires auth", async () => {
 const res = await request(app).get("/api/looms");
 expect(res.status).toBe(401);

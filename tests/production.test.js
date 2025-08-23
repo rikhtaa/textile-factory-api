@@ -3,8 +3,10 @@ const app = require("../src/app");
 const Worker = require("../src/models/Worker");
 const Loom = require("../src/models/Loom");
 const Quality = require("../src/models/Quality");
+const { setup } = require("./setup");
 let token, opId, loomId, qualityId, dateStr;
 beforeAll(async () => {
+await setup();
 const res = await request(app)
 .post("/api/auth/login")
 .send({ email: "admin@test.com", password: "admin123" });

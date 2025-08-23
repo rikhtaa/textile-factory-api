@@ -1,7 +1,9 @@
 const request = require("supertest");
 const app = require("../src/app");
+const { setup } = require("./setup");
 let token, dateStr;
 beforeAll(async () => {
+await setup();
 const res = await request(app)
 .post("/api/auth/login")
 .send({ email: "admin@test.com", password: "admin123" });
