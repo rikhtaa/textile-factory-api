@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { body } = require("express-validator");
-const { createQuality, listQualities, updateQuality } =
+const { createQuality, listQualities, updateQuality, deleteQuality } =
 require("../controllers/qualities.controller");
 const { requireAuth, requireRoles } = require("../middleware/auth");
 const router = Router();
@@ -21,6 +21,7 @@ validateQuality, createQuality);
 router.get("/", requireAuth, listQualities);
 router.put("/:id", requireAuth, requireRoles("admin", "manager"), validateQuality,
 updateQuality);
+router.delete("/:id", requireAuth, requireRoles("admin", "manager"), deleteQuality);
 
 
 

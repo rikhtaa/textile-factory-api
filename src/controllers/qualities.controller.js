@@ -24,5 +24,9 @@ if (name) existing.name = name;
 await existing.save();
 res.json(existing);
 }
+async function deleteQuality(req, res) {
+await Quality.findByIdAndDelete(req.params.id);
+res.status(204).send();
+}
 
-module.exports = { createQuality, listQualities, updateQuality };
+module.exports = { createQuality, listQualities, updateQuality, deleteQuality };
