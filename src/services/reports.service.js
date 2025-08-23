@@ -36,7 +36,7 @@ async function dailyQualityReport(yyyyMmDd) {
 const date = toUtcDateOnly(yyyyMmDd);
 const [records, qualities] = await Promise.all([
 ProductionRecord.find({ date }).lean(),
--Quality.find().lean(),
+Quality.find().lean(),
 ]);
 const qMap = new Map(qualities.map((q) => [q._id.toString(), q.name]));
 const agg = new Map(); // qualityId -> { looms:Set, meters:Number }
