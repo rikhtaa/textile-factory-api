@@ -13,6 +13,6 @@ router.use("/looms", looms);
 router.use("/production", production);
 router.use("/reports", reports);
 router.use("/qualities", qualities);
-
+router.use("/beams", beams);
 
 module.exports = router;
