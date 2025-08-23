@@ -9,5 +9,6 @@ router.use("/workers", workers);
 router.use("/auth", auth);
 router.use("/looms", looms);
 router.use("/production", production);
+router.use("/reports", reports);
 
 module.exports = router;
