@@ -18,9 +18,39 @@ const { operatorId, from, to } = req.query;
 const report = await operatorPeriodReport(operatorId, from, to);
 res.json(report);
 }
+async function getPayRun(req, res) {
+const { from, to, commit } = req.query;
+const f = toUtcDateOnly(from);
+const t = toUtcDateOnly(to);
+const results = await computePayRun(f, t);
+if (commit === "true") {
+const items = results.flatMap((r) =>
+r.breakdown.map((b) => ({
+operatorId: r.operatorId,
+qualityId: b.qualityId,
+meters: b.meters,
+pricePerMeter: b.pricePerMeter,
+amount: b.amount,
+}))
+);
+const gross = results.reduce((acc, r) => acc + r.gross, 0);
+const run = await PaymentRun.create({
+periodStart: f,
+periodEnd: t,
+items,
+adjustments: 0,
+deductions: 0,
+gross,
+net: gross,
+});
+return res.json({ runId: run._id, results });
+}
+res.json({ results });
+}
 module.exports = {
 getDailyLooms,
 getDailyQuality,
-getOperatorPeriod
+getOperatorPeriod,
+getPayRun
 };
 
