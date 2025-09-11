@@ -14,5 +14,15 @@ async function deleteFactory(req,res){
   const deleteFactory = await Factory.findByIdAndDelete(id)
   res.status(204).json({ message: 'Factory deleted', deleteFactory });
 }
+async function updateFactory(req, res){
+    const {id} = req.params
+    const {name} = req.body
+        if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Valid name required (min 2 characters)' });
+    }
+    const updatedFactory = await Factory.findByIdAndUpdate(id, {name: name.trim() })
+    res.status(200).json({message: "Factory name updated", factory: updatedFactory})
+}
 
-module.exports = {createFactory, getFactory, deleteFactory}
+
+module.exports = {createFactory, getFactory, deleteFactory, updateFactory}
