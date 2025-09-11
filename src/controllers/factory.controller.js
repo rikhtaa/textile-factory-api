@@ -5,4 +5,9 @@ async function createFactory(req, res){
   res.status(201).json(factory);
 }
 
-module.exports = {createFactory}
+async function getFactory(req, res){
+    const allFactories = await Factory.find()
+    res.status(201).json(allFactories)
+}
+
+module.exports = {createFactory, getFactory}
