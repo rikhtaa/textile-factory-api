@@ -1,6 +1,6 @@
 const  {Router} = require('express')
 const { requireAuth } = require("../middleware/auth");
-const { createFactory, getFactory } = require('../controllers/factory.controller');
+const { createFactory, getFactory, deleteFactory } = require('../controllers/factory.controller');
 const { body } = require("express-validator");
 
 const router = Router()
@@ -13,4 +13,5 @@ router.get("/", requireAuth, (req, res)=>{
   return getFactory(req,res)
 })
 
+router.delete("/:id", requireAuth, deleteFactory)
 module.exports = router
