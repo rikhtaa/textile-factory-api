@@ -6,6 +6,7 @@ const production = require("./production.routes");
 const reports = require("./reports.routes")
 const qualities = require("./qualities.routes");
 const beams = require("./beams.routes")
+const factories = require("./factories.routes")
 const router = Router();
 
 router.use("/workers", workers);
@@ -15,5 +16,6 @@ router.use("/production", production);
 router.use("/reports", reports);
 router.use("/qualities", qualities);
 router.use("/beams", beams);
+router.use("/factories", factories)
 
 module.exports = router;
