@@ -5,13 +5,7 @@ const { body } = require("express-validator");
 
 const router = Router()
 
-router.post( "/", requireAuth, body("name").isString().isLength({ min: 2 }), (req,res,next)=>{
- return createFactory(req, res, next)
-})
-
-router.get("/", requireAuth, (req, res)=>{
-  return getFactory(req,res)
-})
-
+router.post( "/", requireAuth, body("name").isString().isLength({ min: 2 }), createFactory)
+router.get("/", requireAuth, getFactory)
 router.delete("/:id", requireAuth, deleteFactory)
 module.exports = router
