@@ -4,9 +4,12 @@ async function createLoom(req, res) {
 const loom = await Loom.create(req.body);
 res.status(201).json(loom);
 }
-async function listLooms(_req, res) {
-const data = await Loom.find();
-res.json(data);
+async function listLooms(req, res) {
+const {factoryId} = req.query
+const where ={}
+if(factoryId) where.factoryId = factoryId
+const looms = await Loom.find(where);
+res.json(looms);
 }
 async function getLoom(req, res) {
 const loom = await Loom.findById(req.params.id);

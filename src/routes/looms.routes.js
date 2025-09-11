@@ -7,6 +7,7 @@ const router = Router();
 
 const validateLoom = [
 body("loomNumber").isString().notEmpty(),
+body("factoryId").isString().notEmpty(),
 body("section").optional().isString(),
 body("status").optional().isIn(["active", "inactive"]),
 body("beamInfo").optional().isString(),
