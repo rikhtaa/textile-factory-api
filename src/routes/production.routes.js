@@ -9,6 +9,7 @@ const baseProdValidators = [
 body("operatorId").isString().notEmpty(),
 body("loomId").isString().notEmpty(),
 body("qualityId").isString().notEmpty(),
+body("factoryId").isString().notEmpty(),
 body("date").isISO8601(),
 body("shift").optional().isIn(["A", "B", "C"]),
 body("meterProduced").isFloat({ min: 0 }),

@@ -4,6 +4,7 @@ const ProductionRecordSchema = new mongoose.Schema(
 operatorId: { type: mongoose.Schema.Types.ObjectId, ref: "Worker", required: true
 },
 loomId: { type: mongoose.Schema.Types.ObjectId, ref: "Loom", required: true },
+factoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Factory", required: true }, 
 qualityId: { type: mongoose.Schema.Types.ObjectId, ref: "Quality", required: true
 },
 date: { type: Date, required: true }, // UTC midnight
