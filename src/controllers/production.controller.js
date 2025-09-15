@@ -4,7 +4,7 @@ const Loom = require("../models/Loom");
 const Quality = require("../models/Quality");
 const Factory = require("../models/Factory")
 const { toUtcDateOnly } = require("../utils/dates");
-async function createProduction(req, res) {
+async function createProduction(req, res, n) {
 const { operatorId, loomId, qualityId, factoryId, date, shift, meterProduced, notes } =
 req.body;
 const [op, loom, qual, fact] = await Promise.all([
@@ -28,12 +28,17 @@ shift,
 meterProduced,
 notes,
 });
-res.status(201).json(record);
+
+return res.status(201).json({
+      success: true,
+      message: "Production record created successfully",
+      data: record,
+    });
 } catch (e) {
 if (e.code === 11000) {
-return res.status(409).json({ message: "Duplicate record" });
+return res.status(409).json({success: false, message: "Duplicate record" });
 }
-throw e;
+next(e);
 }
 }
 async function bulkImport(req, res) {
