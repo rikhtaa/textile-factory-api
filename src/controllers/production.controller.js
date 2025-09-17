@@ -2,44 +2,81 @@ const ProductionRecord = require("../models/ProductionRecord");
 const Worker = require("../models/Worker");
 const Loom = require("../models/Loom");
 const Quality = require("../models/Quality");
+const Beam = require("../models/Beam");
 const Factory = require("../models/Factory")
-const { toUtcDateOnly } = require("../utils/dates");
-async function createProduction(req, res, n) {
-const { operatorId, loomId, qualityId, factoryId, date, shift, meterProduced, notes } =
-req.body;
-const [op, loom, qual, fact] = await Promise.all([
-Worker.findById(operatorId),
-Loom.findById(loomId),
-Quality.findById(qualityId),
-Factory.findById(factoryId)
-]);
-if (!op || op.role !== "operator") return res.status(400).json({ message: "Invalid operatorId" });
-if (!loom) return res.status(400).json({ message: "Invalid loomId" });
-if (!qual) return res.status(400).json({ message: "Invalid qualityId" });
-if (!fact) return res.status(400).json({ message: "Invalid factory" });
-try {
-const record = await ProductionRecord.create({
-operatorId,
-loomId,
-factoryId,
-qualityId,
-date: toUtcDateOnly(date),
-shift,
-meterProduced,
-notes,
-});
+const mongoose = require("mongoose");
 
-return res.status(201).json({
+const { toUtcDateOnly } = require("../utils/dates");
+async function createProduction(req, res) {
+  const { beamId, operatorId, loomId, qualityId, factoryId, date, shift, meterProduced, notes } = req.body;
+  
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    const [beam, operator, loom, quality, factory] = await Promise.all([
+      beamId ? Beam.findById(beamId).session(session) : Promise.resolve(null),
+      Worker.findById(operatorId).session(session),
+      Loom.findById(loomId).session(session),
+      Quality.findById(qualityId).session(session),
+      Factory.findById(factoryId).session(session)
+    ]);
+
+    if (beamId && !beam) throw new Error("Invalid BeamId", { status: 400 });
+    if (!operator || operator.role !== "operator") throw new Error("Invalid operatorId", { status: 400 });
+    if (!loom) throw new Error("Invalid loomId", { status: 400 });
+    if (!quality) throw new Error("Invalid qualityId", { status: 400 });
+    if (!factory) throw new Error("Invalid factoryId", { status: 400 });
+
+    if (beamId) {
+      if (beam.isClosed) throw new Error("Beam is already closed", { status: 400 });
+      if (beam.remainingMeters < meterProduced) {
+        throw new Error(`Only ${beam.remainingMeters} meters remaining on this beam`, { status: 400 });
+      }
+
+      beam.producedMeters += meterProduced;
+      beam.remainingMeters -= meterProduced;
+      
+      if (beam.remainingMeters <= 0) {
+        beam.isClosed = true;
+      }
+      
+      await beam.save({ session });
+    }
+
+    const record = await ProductionRecord.create([{
+      operatorId, loomId, qualityId, factoryId,
+      date: toUtcDateOnly(date),
+      shift, meterProduced, notes,
+      ...(beamId && { beamId })
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json({
       success: true,
       message: "Production record created successfully",
-      data: record,
+      data: record[0]
     });
-} catch (e) {
-if (e.code === 11000) {
-return res.status(409).json({success: false, message: "Duplicate record" });
-}
-next(e);
-}
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (error.code === 11000) {
+      return res.status(409).json({ 
+        success: false, 
+        message: "Duplicate production record" 
+      });
+    }
+    
+    const status = error.status || 500;
+    return res.status(status).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
 }
 async function bulkImport(req, res) {
 const { upsert = true, records } = req.body;
