@@ -1,6 +1,6 @@
 const { Router } = require("express");
-const { query } = require("express-validator");
-const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun, get15DayOperator } = require("../controllers/reports.controller");
+const { query, validationResult } = require("express-validator");
+const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun, get15DayOperator, getBeamUsage } = require("../controllers/reports.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
 function validate(req, res, next) {
@@ -40,5 +40,24 @@ query("operatorId").isString(),
 validate,
 get15DayOperator
 );
+router.get(
+  "/beam-usage",
+  requireAuth,
+  [
+    query("start").isISO8601().withMessage("Start date must be valid ISO8601"),
+    query("end").optional().isISO8601().withMessage("End date must be valid ISO8601"),
+    query("beamId").optional().isMongoId().withMessage("Beam ID must be valid"),
+    query("loomId").optional().isMongoId().withMessage("Loom ID must be valid")
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  getBeamUsage 
+);
+
 
 module.exports = router;
