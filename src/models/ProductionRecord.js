@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const ProductionRecordSchema = new mongoose.Schema(
 {
+beamId: { type: mongoose.Schema.Types.ObjectId, ref: "Beam", required: true },
 operatorId: { type: mongoose.Schema.Types.ObjectId, ref: "Worker", required: true
 },
 loomId: { type: mongoose.Schema.Types.ObjectId, ref: "Loom", required: true },
@@ -15,7 +16,7 @@ notes: String,
 { timestamps: true }
 );
 ProductionRecordSchema.index(
-{ operatorId: 1, loomId: 1, qualityId: 1, date: 1 },
+{ beamId: 1, operatorId: 1, loomId: 1, qualityId: 1, date: 1 },
 { unique: true }
 );
 ProductionRecordSchema.index({ date: 1 });
