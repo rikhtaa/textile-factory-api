@@ -42,8 +42,9 @@ adjustments: 0,
 deductions: 0,
 gross,
 net: gross,
+createdBy: req.user.sub
 });
-return res.json({ runId: run._id, results });
+return res.json({ runId: run._id, name: req.user.name, results });
 }
 res.json({ results });
 }

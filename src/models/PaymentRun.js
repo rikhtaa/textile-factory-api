@@ -9,7 +9,7 @@ meters: { type: Number, required: true },
 pricePerMeter: { type: Number, required: true },
 amount: { type: Number, required: true },
 },
-{ _id: false }
+{ _id: false },
 );
 const PaymentRunSchema = new mongoose.Schema(
 {
@@ -20,6 +20,11 @@ adjustments: { type: Number, default: 0 },
 deductions: { type: Number, default: 0 },
 gross: { type: Number, required: true },
 net: { type: Number, required: true },
+createdBy: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Worker", 
+      required: true 
+    },
 },
 { timestamps: true }
 );
