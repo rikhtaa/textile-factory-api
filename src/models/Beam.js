@@ -6,7 +6,7 @@ const BeamSchema = new mongoose.Schema(
     totalMeters: { type: Number, required: true, min: 0 },
     producedMeters: { type: Number, default: 0, min: 0 },
     remainingMeters: { type: Number, required: true, min: 0 },
-    isClosed: { type: Boolean, required: true, },
+    isClosed: { type: Boolean, min: 0},
   },
   { timestamps: true }
 );

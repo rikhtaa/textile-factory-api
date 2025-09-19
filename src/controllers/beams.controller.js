@@ -1,22 +1,49 @@
 const Beam = require("../models/Beam");
-const BeamProduction = require("../models/BeamProduction");
+const ProductionRecord = require("../models/ProductionRecord"); // ✅ Use ProductionRecord, not BeamProduction
 const { toUtcDateOnly } = require("../utils/dates");
 async function beamsReport(req, res) {
-const { dateFrom, dateTo, loomId } = req.query;
-const from = toUtcDateOnly(dateFrom);
-const to = toUtcDateOnly(dateTo);
+  const { dateFrom, dateTo, loomId } = req.query;
+  const from = toUtcDateOnly(dateFrom);
+  const to = toUtcDateOnly(dateTo);
 
-const where = { date: { $gte: from, $lte: to } };
-if (loomId) where.loomId = loomId;
-const records = await BeamProduction.find(where).lean();
-const total = records.reduce((acc, r) => acc + Number(r.totalMeters), 0);
-res.json({
-from: dateFrom,
-to: dateTo,
-loomId: loomId || null,
-totalMeters: total,
-count: records.length,
-});
+  try {
+    const productionWhere = { date: { $gte: from, $lte: to } };
+    if (loomId) productionWhere.loomId = loomId;
+    
+    const records = await ProductionRecord.find(productionWhere).lean();
+
+    const beamIds = [...new Set(records.map(r => r.beamId).filter(Boolean))];
+    
+    const beams = await Beam.find({ 
+      _id: { $in: beamIds } 
+    }).select("beamNumber totalMeters producedMeters remainingMeters isClosed").lean();
+
+    const beamMap = new Map();
+    beams.forEach(beam => {
+      beamMap.set(beam._id.toString(), beam);
+    });
+
+    const total = records.reduce((acc, r) => acc + Number(r.meterProduced), 0);
+
+    res.json({
+      from: dateFrom,
+      to: dateTo,
+      loomId: loomId || null,
+      totalMeters: total,
+      count: beamIds.length,
+      details: beams.map(beam => ({
+        _id: beam._id,
+        beamNumber: beam.beamNumber,
+        totalMeters: beam.totalMeters,
+        producedMeters: beam.producedMeters,
+        remainingMeters: beam.remainingMeters,
+        isClosed: beam.isClosed
+      }))
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 }
 async function createBeam(req, res){
     try {
