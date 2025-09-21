@@ -4,6 +4,7 @@ const { toUtcDateOnly } = require("../utils/dates");
 const { computePayRun } = require("../services/payrun.service");
 const PaymentRun = require("../models/PaymentRun");
 const ProductionRecord = require("../models/ProductionRecord");
+const { default: mongoose } = require("mongoose");
 async function getDailyLooms(req, res) {
 const { date } = req.query;
 const report = await dailyLoomReport(date);
