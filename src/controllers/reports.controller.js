@@ -21,11 +21,10 @@ const report = await operatorPeriodReport(operatorId, from, to);
 res.json(report);
 }
 async function getPayRun(req, res) {
-const { from, to, commit } = req.query;
+const { from, to } = req.query;
 const f = toUtcDateOnly(from);
 const t = toUtcDateOnly(to);
 const results = await computePayRun(f, t);
-if (commit === "true") {
 const items = results.flatMap((r) =>
 r.breakdown.map((b) => ({
 operatorId: r.operatorId,
@@ -46,9 +45,8 @@ gross,
 net: gross,
 createdBy: req.user.sub
 });
-return res.json({ runId: run._id, name: req.user.name, results });
-}
 res.json({ results });
+return res.json({ runId: run._id, name: req.user.name, results });
 }
 async function get15DayOperator(req, res) {
 const { startDate, operatorId } = req.query;
