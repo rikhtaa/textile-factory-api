@@ -1,6 +1,7 @@
 const ProductionRecord = require("../models/ProductionRecord");
 const Loom = require("../models/Loom");
 const Worker = require("../models/Worker");
+const LoomManagement = require("../models/LoomManagement")
 const Quality = require("../models/Quality");
 const { toUtcDateOnly, addDays } = require("../utils/dates");
 async function dailyLoomReport(yyyyMmDd) {
@@ -56,47 +57,80 @@ totalMetersProduced: data.meters,
 return { date: yyyyMmDd, rows };
 }
 async function operatorPeriodReport(operatorId, fromStr, toStr) {
-const from = toUtcDateOnly(fromStr);
-const to = toUtcDateOnly(toStr);
-const [records, qualities, worker] = await Promise.all([
-ProductionRecord.find({ operatorId, date: { $gte: from, $lte: to } }).sort({ date:
-    1 }).lean(),
-Quality.find().lean(),
-Worker.findById(operatorId).lean(),
-]);
-const qMap = new Map(qualities.map((q) => [q._id.toString(), q]));
-const byDate = new Map(); // dateStr -> qualityId->meters
-for (const r of records) {
-const dateStr = r.date.toISOString().slice(0, 10);
-if (!byDate.has(dateStr)) byDate.set(dateStr, new Map());
-const qm = byDate.get(dateStr);
-const qid = r.qualityId.toString();
-qm.set(qid, (qm.get(qid) || 0) + Number(r.meterProduced));
+  const from = toUtcDateOnly(fromStr);
+  const to = toUtcDateOnly(toStr);
+
+  const [records, qualities, worker, looms, loomManagements] = await Promise.all([
+    ProductionRecord.find({ operatorId, date: { $gte: from, $lte: to } })
+      .sort({ date: 1 })
+      .lean(),
+    Quality.find().lean(),
+    Worker.findById(operatorId).lean(),
+    Loom.find().lean(),
+    LoomManagement.find().lean(),
+  ]);
+
+  const qMap = new Map(qualities.map(q => [q._id.toString(), q]));
+  const loomMap = new Map(looms.map(l => [l._id.toString(), l.loomNumber]));
+  const lmMap = new Map(loomManagements.map(lm => [lm._id.toString(), lm]));
+
+  const byDate = new Map();
+  const loomSet = new Set();
+  const shiftSet = new Set();
+
+  for (const r of records) {
+    const dateStr = r.date.toISOString().slice(0, 10);
+    if (!byDate.has(dateStr)) byDate.set(dateStr, []);
+
+    let loomName = "Unknown Loom";
+    if (r.loomId && loomMap.has(r.loomId.toString())) {
+      loomName = loomMap.get(r.loomId.toString());
+    } else if (r.loomManagementId && lmMap.has(r.loomManagementId.toString())) {
+      const lm = lmMap.get(r.loomManagementId.toString());
+      const loom = loomMap.get(lm.loom?.toString());
+      if (loom) loomName = loom;
+    }
+
+    const quality = qMap.get(r.qualityId?.toString());
+    const pricePerMeter = quality?.pricePerMeter || 0;
+    const meters = Number(r.meterProduced) || 0;
+    const amount = meters * pricePerMeter;
+
+    if (loomName && loomName !== "Unknown Loom") loomSet.add(loomName);
+    if (r.shift) shiftSet.add(r.shift);
+
+    byDate.get(dateStr).push({
+      qualityId: r.qualityId,
+      qualityName: quality?.name || "Unknown",
+      pricePerMeter,
+      meters,
+      amount,
+      loomId: r.loomId,
+      loomName,
+      shift: r.shift || "Unknown",
+    });
+  }
+
+  const daily = Array.from(byDate.entries()).map(([date, productions]) => ({
+    date,
+    productions,
+    total: productions.reduce((acc, p) => acc + (p.amount || 0), 0),
+  }));
+
+  const totalPayable = daily.reduce((acc, d) => acc + (d.total || 0), 0);
+
+  return {
+    operatorId,
+    operatorName: worker?.name || null,
+    from: fromStr,
+    to: toStr,
+    daily,
+    totalPayable,
+    looms: Array.from(loomSet),
+    shifts: Array.from(shiftSet),
+  };
 }
-const daily = Array.from(byDate.entries()).map(([dateStr, qm]) => {
-const qualitiesArr = Array.from(qm.entries()).map(([qId, meters]) => {
-const q = qMap.get(qId);
-return {
-qualityId: qId,
-qualityName: q.name,
-pricePerMeter: q.pricePerMeter,
-meters,
-amount: meters * q.pricePerMeter,
-};
-});
-const total = qualitiesArr.reduce((acc, r) => acc + r.amount, 0);
-return { date: dateStr, qualities: qualitiesArr, total };
-});
-const totalPayable = daily.reduce((acc, d) => acc + d.total, 0);
-return {
-operatorId,
-operatorName: worker ? worker.name : null,
-from: fromStr,
-to: toStr,
-daily,
-totalPayable,
-};
-}
+
 async function fifteenDayOperator(operatorId, start) {
 const from = toUtcDateOnly(start);
 const to = addDays(from, 14);
