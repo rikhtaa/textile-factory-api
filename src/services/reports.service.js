@@ -20,15 +20,18 @@ async function dailyLoomReport(yyyyMmDd) {
   const start = startOfDayUTC(yyyyMmDd);
   const end = endOfDayUTC(yyyyMmDd);
 
-  const [records, looms, workers] = await Promise.all([
+  const [records, looms, workers, qualities] = await Promise.all([
     ProductionRecord.find({
       date: { $gte: start, $lte: end }
     }).lean(),
     Loom.find().lean(),
     Worker.find().lean(),
+    Quality.find().lean()
   ]);
 
   const workerMap = new Map(workers.map(w => [w._id.toString(), w.name]));
+  const qualityMap = new Map(qualities.map(q => [q._id.toString(), q.name]));
+
   const byLoom = new Map();
 
   for (const r of records) {
@@ -44,17 +47,21 @@ async function dailyLoomReport(yyyyMmDd) {
   const rows = looms.map(loom => {
     const entry = byLoom.get(loom._id.toString());
     if (!entry) return { loomNumber: loom.loomNumber, operatorName: null, meters: 0, qualities: [] };
+
     const names = Array.from(entry.operators).map(id => workerMap.get(id)).filter(Boolean);
     const operatorName = names.length === 1 ? names[0] : "Multiple";
-    const qualities = Array.from(entry.qualities);
-    return { loomNumber: loom.loomNumber, operatorName, meters: entry.total, qualities };
+
+    const qualityNames = Array.from(entry.qualities)
+      .map(id => qualityMap.get(id))
+      .filter(Boolean);
+
+    return { loomNumber: loom.loomNumber, operatorName, meters: entry.total, qualities: qualityNames };
   });
 
   const dayTotal = rows.reduce((acc, r) => acc + r.meters, 0);
 
   return { date: yyyyMmDd, rows, dayTotal };
 }
-
 async function dailyQualityReport(yyyyMmDd) {
 const date = toUtcDateOnly(yyyyMmDd);
 const [records, qualities] = await Promise.all([
@@ -62,7 +69,7 @@ ProductionRecord.find({ date }).lean(),
 Quality.find().lean(),
 ]);
 const qMap = new Map(qualities.map((q) => [q._id.toString(), q.name]));
-const agg = new Map(); // qualityId -> { looms:Set, meters:Number }
+const agg = new Map(); 
 for (const r of records) {
 const qid = r.qualityId.toString();
 if (!agg.has(qid)) agg.set(qid, { looms: new Set(), meters: 0 });
