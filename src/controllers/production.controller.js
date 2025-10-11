@@ -14,33 +14,31 @@ async function createProduction(req, res) {
   session.startTransaction();
   
   try {
-    const [beam, operator, loom, quality, factory] = await Promise.all([
-      beamId ? Beam.findById(beamId).session(session) : Promise.resolve(null),
-      Worker.findById(operatorId).session(session),
-      Loom.findById(loomId).session(session),
-      Quality.findById(qualityId).session(session),
-      Factory.findById(factoryId).session(session)
-    ]);
+    const beam = beamId ? await Beam.findById(beamId).session(session) : null;
+    const operator = await Worker.findById(operatorId).session(session);
+    const loom = await Loom.findById(loomId).session(session);
+    const quality = await Quality.findById(qualityId).session(session);
+    const factory = await Factory.findById(factoryId).session(session);
 
-    if (beamId && !beam) throw new Error("Invalid BeamId", { status: 400 });
-    if (!operator || operator.role !== "operator") throw new Error("Invalid operatorId", { status: 400 });
-    if (!loom) throw new Error("Invalid loomId", { status: 400 });
-    if (!quality) throw new Error("Invalid qualityId", { status: 400 });
-    if (!factory) throw new Error("Invalid factoryId", { status: 400 });
+    if (beamId && !beam) throw Object.assign(new Error("Invalid BeamId"), { status: 400 });
+    if (!operator) throw Object.assign(new Error("Invalid operatorId"), { status: 400 });
+    if (!loom) throw Object.assign(new Error("Invalid loomId"), { status: 400 });
+    if (!quality) throw Object.assign(new Error("Invalid qualityId"), { status: 400 });
+    if (!factory) throw Object.assign(new Error("Invalid factoryId"), { status: 400 });
 
     if (beamId) {
-      if (beam.isClosed) throw new Error("Beam is already closed", { status: 400 });
+      if (beam.isClosed) throw Object.assign(new Error("Beam is already closed"), { status: 400 });
       if (beam.remainingMeters < meterProduced) {
-        throw new Error(`Only ${beam.remainingMeters} meters remaining on this beam`, { status: 400 });
+        throw Object.assign(
+          new Error(`Only ${beam.remainingMeters} meters remaining on this beam`),
+          { status: 400 }
+        );
       }
 
       beam.producedMeters += meterProduced;
       beam.remainingMeters -= meterProduced;
       
-      if (beam.remainingMeters <= 0) {
-        beam.isClosed = true;
-      }
-      
+      if (beam.remainingMeters <= 0) beam.isClosed = true;
       await beam.save({ session });
     }
 
@@ -52,7 +50,6 @@ async function createProduction(req, res) {
     }], { session });
 
     await session.commitTransaction();
-    session.endSession();
 
     return res.status(201).json({
       success: true,
@@ -62,7 +59,6 @@ async function createProduction(req, res) {
 
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
 
     if (error.code === 11000) {
       return res.status(409).json({ 
@@ -70,14 +66,18 @@ async function createProduction(req, res) {
         message: "Duplicate production record" 
       });
     }
-    
+
     const status = error.status || 500;
     return res.status(status).json({ 
       success: false, 
       message: error.message 
     });
+
+  } finally {
+    session.endSession();
   }
 }
+
 async function bulkImport(req, res) {
 const { upsert = true, records } = req.body;
 if (!Array.isArray(records) || records.length === 0) {
@@ -119,10 +119,12 @@ return res.status(201).json(results);
 }
 }
 async function listProduction(req, res) {
-const { date, loomId, operatorId, factoryId } = req.query;
+const { date, loomId, operatorId, factoryId, beamId, qualityId } = req.query;
 const where = {};
 if (date) where.date = toUtcDateOnly(date);
 if (loomId) where.loomId = loomId;
+if (beamId) where.beamId = beamId;
+if (qualityId) where.qualityId = qualityId;
 if (operatorId) where.operatorId = operatorId;
  if (factoryId) where.factoryId = factoryId;
 const records = await ProductionRecord.find(where).sort({ date: 1 }).lean();
