@@ -4,35 +4,57 @@ const Worker = require("../models/Worker");
 const LoomManagement = require("../models/LoomManagement")
 const Quality = require("../models/Quality");
 const { toUtcDateOnly, addDays } = require("../utils/dates");
+function startOfDayUTC(dateStr) {
+  const d = new Date(dateStr);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDayUTC(dateStr) {
+  const d = new Date(dateStr);
+  d.setUTCHours(23, 59, 59, 999);
+  return d;
+}
+
 async function dailyLoomReport(yyyyMmDd) {
-const date = toUtcDateOnly(yyyyMmDd);
-const [records, looms, workers] = await Promise.all([
-ProductionRecord.find({ date }).lean(),
-Loom.find().lean(),
-Worker.find().lean(),
-]);
-const workerMap = new Map(workers.map((w) => [w._id.toString(), w.name]));
-const byLoom = new Map();
-for (const r of records) {
-const lid = r.loomId.toString();
-if (!byLoom.has(lid)) byLoom.set(lid, { total: 0, operators: new Set() });
-const entry = byLoom.get(lid);
-entry.total += Number(r.meterProduced);
-entry.operators.add(r.operatorId.toString());
+  const start = startOfDayUTC(yyyyMmDd);
+  const end = endOfDayUTC(yyyyMmDd);
+
+  const [records, looms, workers] = await Promise.all([
+    ProductionRecord.find({
+      date: { $gte: start, $lte: end }
+    }).lean(),
+    Loom.find().lean(),
+    Worker.find().lean(),
+  ]);
+
+  const workerMap = new Map(workers.map(w => [w._id.toString(), w.name]));
+  const byLoom = new Map();
+
+  for (const r of records) {
+    if (!r.loomId || !r.operatorId) continue;
+    const lid = r.loomId.toString();
+    if (!byLoom.has(lid)) byLoom.set(lid, { total: 0, operators: new Set(), qualities: new Set() });
+    const entry = byLoom.get(lid);
+    entry.total += Number(r.meterProduced);
+    entry.operators.add(r.operatorId.toString());
+    if (r.qualityId) entry.qualities.add(r.qualityId.toString());
+  }
+
+  const rows = looms.map(loom => {
+    const entry = byLoom.get(loom._id.toString());
+    if (!entry) return { loomNumber: loom.loomNumber, operatorName: null, meters: 0, qualities: [] };
+    const names = Array.from(entry.operators).map(id => workerMap.get(id)).filter(Boolean);
+    const operatorName = names.length === 1 ? names[0] : "Multiple";
+    const qualities = Array.from(entry.qualities);
+    return { loomNumber: loom.loomNumber, operatorName, meters: entry.total, qualities };
+  });
+
+  const dayTotal = rows.reduce((acc, r) => acc + r.meters, 0);
+
+  return { date: yyyyMmDd, rows, dayTotal };
 }
-const rows = looms.map((loom) => {
-const entry = byLoom.get(loom._id.toString());
-if (!entry) {
-return { loomNumber: loom.loomNumber, operatorName: null, meters: 0 };
-}
-const names = Array.from(entry.operators).map((id) =>
-workerMap.get(id)).filter(Boolean);
-const operatorName = names.length === 1 ? names[0] : "Multiple";
-return { loomNumber: loom.loomNumber, operatorName, meters: entry.total };
-});
-const dayTotal = rows.reduce((acc, r) => acc + r.meters, 0);
-return { date: yyyyMmDd, rows, dayTotal };
-}
+
 async function dailyQualityReport(yyyyMmDd) {
 const date = toUtcDateOnly(yyyyMmDd);
 const [records, qualities] = await Promise.all([
@@ -130,7 +152,6 @@ async function operatorPeriodReport(operatorId, fromStr, toStr) {
     shifts: Array.from(shiftSet),
   };
 }
-
 async function fifteenDayOperator(operatorId, start) {
 const from = toUtcDateOnly(start);
 const to = addDays(from, 14);
