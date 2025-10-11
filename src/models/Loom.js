@@ -5,7 +5,9 @@ loomNumber: { type: String, required: true, unique: true },
 factoryId: {type: mongoose.Schema.Types.ObjectId, ref: 'Factory', required: true},
 section: String,
 status: { type: String, enum: ["active", "inactive"], default: "active" },
-beamInfo: String,
+beam:{type: mongoose.Schema.Types.ObjectId, ref: 'Beam'},
+quality:{type: mongoose.Schema.Types.ObjectId, ref: 'Quality'},
+date:{type: Date}
 },
 
 
