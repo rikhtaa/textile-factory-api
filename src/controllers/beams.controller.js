@@ -1,5 +1,5 @@
 const Beam = require("../models/Beam");
-const ProductionRecord = require("../models/ProductionRecord"); // ✅ Use ProductionRecord, not BeamProduction
+const ProductionRecord = require("../models/ProductionRecord"); 
 const { toUtcDateOnly } = require("../utils/dates");
 async function beamsReport(req, res) {
   const { dateFrom, dateTo, loomId } = req.query;
@@ -47,8 +47,8 @@ async function beamsReport(req, res) {
 }
 async function createBeam(req, res){
     try {
-        const { beamNumber, totalMeters, isClosed  } = req.body;
-        const beam = await Beam.create({ beamNumber, totalMeters, isClosed  });
+        const { beamNumber, totalMeters, isClosed, quality } = req.body;
+        const beam = await Beam.create({ beamNumber, totalMeters, isClosed, quality  });
         res.status(201).json(beam);
     }catch (error) {
         if (error.code === 11000) {
@@ -59,7 +59,7 @@ async function createBeam(req, res){
 }
 async function getAllBeam(req,res){
     const list = await Beam.find().sort({ beamNumber: 1 })
-     .select("beamNumber totalMeters producedMeters remainingMeters isClosed").lean();
+     .select("beamNumber totalMeters quality producedMeters remainingMeters isClosed").lean();
      res.json(list);
 }
 async function updateBeam(req, res) {

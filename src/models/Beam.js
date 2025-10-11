@@ -5,6 +5,7 @@ const BeamSchema = new mongoose.Schema(
     beamNumber: { type: String, unique: true, required: true, index: true },
     totalMeters: { type: Number, required: true, min: 0 },
     producedMeters: { type: Number, default: 0, min: 0 },
+    quality: {type: mongoose.Schema.Types.ObjectId, ref: "Quality"},
     remainingMeters: { type: Number, required: true, min: 0 },
     isClosed: { type: Boolean, min: 0},
   },
