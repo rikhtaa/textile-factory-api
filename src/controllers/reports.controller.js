@@ -1,6 +1,6 @@
 const { dailyLoomReport, dailyQualityReport, operatorPeriodReport, fifteenDayOperator
 } = require("../services/reports.service");
-const { toUtcDateOnly } = require("../utils/dates");
+const { toUtcDateOnly, addDays  } = require("../utils/dates");
 const { computePayRun } = require("../services/payrun.service");
 const PaymentRun = require("../models/PaymentRun");
 const ProductionRecord = require("../models/ProductionRecord");
@@ -112,12 +112,70 @@ async function getBeamUsage(req, res) {
     res.status(500).json({ message: error.message });
   }
 }
+async function getProductionByShift(req, res) {
+  const { date, shift } = req.query;
+
+  if (!date) return res.status(400).json({ message: "date is required (YYYY-MM-DD)" });
+  if (!shift) return res.status(400).json({ message: "shift is required" });
+
+  try {
+    const start = toUtcDateOnly(date);
+    const end = addDays(start, 1);
+
+    const match = {
+      date: { $gte: start, $lt: end },
+      shift: shift.trim().toUpperCase()
+    };
+
+    const productions = await ProductionRecord.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "looms",
+          localField: "loomId",
+          foreignField: "_id",
+          as: "loom"
+        }
+      },
+      { $unwind: { path: "$loom", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "operators",
+          localField: "operatorId",
+          foreignField: "_id",
+          as: "operator"
+        }
+      },
+      { $unwind: { path: "$operator", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          date: 1,
+          shift: 1,
+          loom: "$loom.loomNumber",
+          operator: "$operator.name",
+          meterProduced: 1,
+          beamId: 1,
+          notes: 1
+        }
+      }
+    ]);
+
+    res.json(productions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
+
 module.exports = {
 getDailyLooms,
 getDailyQuality,
 getOperatorPeriod,
 getPayRun,
 get15DayOperator,
-getBeamUsage
+getBeamUsage,
+getProductionByShift
 };
 

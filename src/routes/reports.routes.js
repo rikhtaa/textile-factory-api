@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { query, validationResult } = require("express-validator");
-const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun, get15DayOperator, getBeamUsage } = require("../controllers/reports.controller");
+const { getDailyLooms, getDailyQuality, getOperatorPeriod, getPayRun, get15DayOperator, getBeamUsage, getShiftWiseProduction, getProductionByShift } = require("../controllers/reports.controller");
 const { requireAuth } = require("../middleware/auth");
 const router = Router();
 function validate(req, res, next) {
@@ -58,6 +58,9 @@ router.get(
   },
   getBeamUsage 
 );
+router.get("/shift-wise-production", 
+getProductionByShift
+)
 
 
 module.exports = router;
